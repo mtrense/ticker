@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres
+    ports:
+      - "127.0.0.1:0:5432"
+    environment:
+      POSTGRES_USER: ticker
+      POSTGRES_PASSWORD: s3cr3t
