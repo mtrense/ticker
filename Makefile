@@ -12,7 +12,7 @@ archive:
 
 release:
 
-build-prerequisites:
+build-prerequisites: generate-rpc
 	mkdir -p bin dist
 
 release-prerequisites:
@@ -22,6 +22,9 @@ test-prerequisites:
 install-tools:
 
 ### BUILD ###################################################################
+
+generate-rpc:
+	protoc -Irpc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative rpc/api.proto
 
 build-ticker: build-prerequisites
 	go build -ldflags "-X main.version=${VERSION} -X main.commit=$$(git rev-parse --short HEAD 2>/dev/null || echo \"none\")" -o bin/$(OUTPUT_DIR)$(BINARY_NAME) cli/main.go
