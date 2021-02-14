@@ -2,3 +2,5 @@
 /dist
 /.idea
 
+# Generated Protobuf code
+/rpc/*.pb.go
