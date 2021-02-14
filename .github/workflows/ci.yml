@@ -19,12 +19,15 @@ jobs:
       - name: Add $GOPATH/bin to $PATH
         run: echo "PATH=$(echo "$PATH:$(go env GOPATH)/bin")" >> $GITHUB_ENV
 
+      - name: Add $HOME/bin to $PATH
+        run: echo "PATH=$(echo "$PATH:$HOME/bin")" >> $GITHUB_ENV
+
       - name: Install ginkgo
         run: go get -u github.com/onsi/ginkgo/ginkgo
 
       - name: Install protoc
-        run: apt install -y protobuf-compiler
-        
+        run: wget https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/protoc-3.14.0-linux-x86_64.zip && unzip protoc-3.14.0-linux-x86_64.zip ; rm protoc-3.14.0-linux-x86_64.zip
+
       - name: Install grpc
         run: go get -u google.golang.org/protobuf/cmd/protoc-gen-go google.golang.org/grpc/cmd/protoc-gen-go-grpc
 
