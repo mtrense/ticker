@@ -20,7 +20,13 @@ jobs:
         run: echo "PATH=$(echo "$PATH:$(go env GOPATH)/bin")" >> $GITHUB_ENV
 
       - name: Install ginkgo
-        run: go get github.com/onsi/ginkgo/ginkgo
+        run: go get -u github.com/onsi/ginkgo/ginkgo
+
+      - name: Install protoc
+        run: apt install -y protobuf-compiler
+        
+      - name: Install grpc
+        run: go get -u google.golang.org/protobuf/cmd/protoc-gen-go google.golang.org/grpc/cmd/protoc-gen-go-grpc
 
       - name: Test all
         run: make test
