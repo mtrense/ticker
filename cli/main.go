@@ -1,9 +1,18 @@
 package main
 
 import (
-	"github.com/mtrense/soil"
+	"context"
+	"fmt"
+
+	"github.com/mtrense/soil/logging"
+
+	"github.com/mtrense/ticker/rpc"
+	"github.com/mtrense/ticker/server"
+	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
+
 	. "github.com/mtrense/soil/config"
-	"github.com/mtrense/ticker/connection"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +22,16 @@ var (
 	app     = NewCommandline("ticker",
 		SubCommand("server",
 			Short("Run the ticker server"),
+			Flag("listen", Str(":6677"), Description("Address to listen for grpc connections"), Mandatory(), Persistent(), Env()),
 			Run(executeServer),
+		),
+		SubCommand("client",
+			Short("Run the ticker client"),
+			Flag("connect", Str(""), Description("Server to connect to"), Mandatory(), Persistent(), Env()),
+			SubCommand("metrics",
+				Short("Show live metrics of the ticker server"),
+				Run(executeClientMetrics),
+			),
 		),
 		Version(version, commit),
 		Completion(),
@@ -24,7 +42,7 @@ func init() {
 	EnvironmentConfig("TICKER")
 	ApplyLogFlags(app)
 	//soil.DefaultCLI(app, version, commit, "TICKER")
-	soil.ConfigureDefaultLogging()
+	logging.ConfigureLogging("info", "-")
 }
 
 func main() {
@@ -34,6 +52,29 @@ func main() {
 }
 
 func executeServer(cmd *cobra.Command, args []string) {
-	server := connection.NewServer(":6677")
-	server.Start()
+	listen := viper.GetString("listen")
+	srv := server.NewServer(listen, version)
+	if err := srv.Start(); err != nil {
+		panic(err)
+	}
+}
+
+func executeClientMetrics(cmd *cobra.Command, args []string) {
+	connect := viper.GetString("connect")
+	if conn, err := grpc.Dial(connect, grpc.WithInsecure()); err != nil {
+		panic(err)
+	} else {
+		admin := rpc.NewAdminClient(conn)
+		ctx, cancel := context.WithCancel(context.Background())
+		num := 0
+		if state, err := admin.GetServerState(ctx, &emptypb.Empty{}); err != nil {
+			panic(err)
+		} else {
+			fmt.Printf("uptime: %d\nactive connections: %d\n", state.Uptime, state.ConnectionCount)
+			num += 1
+			if num > 10 {
+				cancel()
+			}
+		}
+	}
 }
