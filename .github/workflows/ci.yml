@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Add $GOPATH/bin to $PATH
-        run: echo "PATH=$(echo $PATH:/Users/max/.go/bin)" >> $GITHUB_ENV
+        run: echo "PATH=$(echo "$PATH:$(go env GOPATH)/bin")" >> $GITHUB_ENV
 
       - name: Install ginkgo
         run: go get github.com/onsi/ginkgo/ginkgo
