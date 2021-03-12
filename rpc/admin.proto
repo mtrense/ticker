@@ -1,10 +1,6 @@
 
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
-import "google/protobuf/struct.proto";
-import "google/protobuf/timestamp.proto";
-
 option go_package = "github.com/mtrense/ticker/rpc";
 
 message ShutdownParameters {

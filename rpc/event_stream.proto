@@ -9,14 +9,14 @@ option go_package = "github.com/mtrense/ticker/rpc";
 message Subscription {
   string subscription_id = 1;
   repeated string aggregate = 2;
-  string event_type = 3;
+  string type = 3;
   uint64 first_sequence = 4;
 }
 
 message Event {
   uint64 sequence = 1;
   repeated string aggregate = 2;
-  string event_type = 3;
+  string type = 3;
   google.protobuf.Timestamp occurred_at = 4;
   google.protobuf.Struct payload = 10;
 }
