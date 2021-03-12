@@ -4,3 +4,6 @@
 
 # Generated Protobuf code
 /rpc/*.pb.go
+
+# Profiler results
+*.coverprofile
