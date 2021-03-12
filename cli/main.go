@@ -23,6 +23,7 @@ var (
 		SubCommand("server",
 			Short("Run the ticker server"),
 			Flag("listen", Str(":6677"), Description("Address to listen for grpc connections"), Mandatory(), Persistent(), Env()),
+			Flag("database", Str("localhost:5432"), Description("Database server to connect to"), Mandatory(), Persistent(), Env()),
 			Run(executeServer),
 		),
 		SubCommand("client",
