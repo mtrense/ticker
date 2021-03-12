@@ -22,8 +22,8 @@ import (
 type Server struct {
 	listen          string
 	version         string
-	stream          *eventStreamServer
-	admin           *adminServer
+	streamServer    *eventStreamServer
+	adminServer     *adminServer
 	connectionCount int32
 	startTime       time.Time
 }
@@ -33,10 +33,10 @@ func NewServer(listen string, version string) *Server {
 		listen:  listen,
 		version: version,
 	}
-	srv.stream = &eventStreamServer{
+	srv.streamServer = &eventStreamServer{
 		server: srv,
 	}
-	srv.admin = &adminServer{
+	srv.adminServer = &adminServer{
 		server: srv,
 	}
 	return srv
@@ -44,15 +44,15 @@ func NewServer(listen string, version string) *Server {
 
 func (s *Server) Start() error {
 	s.startTime = time.Now()
-	sigs := make(chan os.Signal)
-	signal.Notify(sigs, os.Interrupt, os.Kill)
+	signals := make(chan os.Signal)
+	signal.Notify(signals, os.Interrupt, os.Kill)
 	listener, err := net.Listen("tcp", ":6677")
 	if err != nil {
 		return err
 	}
 	srv := grpc.NewServer(grpc.StatsHandler(s))
 	go func() {
-		sig := <-sigs
+		sig := <-signals
 		switch sig {
 		case os.Kill:
 			srv.Stop()
@@ -60,8 +60,8 @@ func (s *Server) Start() error {
 			srv.GracefulStop()
 		}
 	}()
-	rpc.RegisterEventStreamServer(srv, s.stream)
-	rpc.RegisterAdminServer(srv, s.admin)
+	rpc.RegisterEventStreamServer(srv, s.streamServer)
+	rpc.RegisterAdminServer(srv, s.adminServer)
 	reflection.Register(srv)
 	return srv.Serve(listener)
 }
