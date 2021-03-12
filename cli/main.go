@@ -41,7 +41,6 @@ var (
 func init() {
 	EnvironmentConfig("TICKER")
 	ApplyLogFlags(app)
-	//soil.DefaultCLI(app, version, commit, "TICKER")
 	logging.ConfigureLogging("info", "-")
 }
 
