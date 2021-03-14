@@ -17,4 +17,5 @@ message ShutdownParameters {
 message ServerState {
   int64 uptime = 1;
   uint32 connection_count = 2;
+  int64 event_count = 3;
 }

@@ -17,11 +17,12 @@ type adminServer struct {
 
 func (a *adminServer) GetServerState(ctx context.Context, empty *emptypb.Empty) (*rpc.ServerState, error) {
 	if p, ok := peer.FromContext(ctx); ok {
-		logging.L().Info().Str("peerAddr", p.Addr.String()).Msg("Initializing")
+		logging.L().Debug().Str("peerAddr", p.Addr.String()).Msg("GetServerState()")
 	}
 	s := rpc.ServerState{
 		Uptime:          int64(time.Since(a.server.startTime).Seconds()),
 		ConnectionCount: uint32(a.server.connectionCount),
+		EventCount:      int64(a.server.streamBackend.LastSequence()),
 	}
 	return &s, nil
 }
