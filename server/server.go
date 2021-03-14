@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/mtrense/ticker/eventstream/base"
+
 	"google.golang.org/grpc/stats"
 
 	"google.golang.org/grpc/peer"
@@ -22,16 +24,18 @@ import (
 type Server struct {
 	listen          string
 	version         string
+	streamBackend   base.EventStream
 	streamServer    *eventStreamServer
 	adminServer     *adminServer
 	connectionCount int32
 	startTime       time.Time
 }
 
-func NewServer(listen string, version string) *Server {
+func NewServer(listen string, version string, backend base.EventStream) *Server {
 	srv := &Server{
-		listen:  listen,
-		version: version,
+		listen:        listen,
+		version:       version,
+		streamBackend: backend,
 	}
 	srv.streamServer = &eventStreamServer{
 		server: srv,
