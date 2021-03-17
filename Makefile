@@ -24,12 +24,15 @@ install-tools:
 ### BUILD ###################################################################
 
 generate-rpc:
-	protoc -Irpc --go_out=rpc --go_opt=paths=source_relative --go-grpc_out=rpc --go-grpc_opt=paths=source_relative rpc/api.proto
 	protoc -Irpc --go_out=rpc --go_opt=paths=source_relative --go-grpc_out=rpc --go-grpc_opt=paths=source_relative rpc/admin.proto
 	protoc -Irpc --go_out=rpc --go_opt=paths=source_relative --go-grpc_out=rpc --go-grpc_opt=paths=source_relative rpc/event_stream.proto
 
 build-ticker: build-prerequisites
-	go build -ldflags "-X main.version=${VERSION} -X main.commit=$$(git rev-parse --short HEAD 2>/dev/null || echo \"none\")" -o bin/$(OUTPUT_DIR)$(BINARY_NAME) cli/main.go
+	go build \
+		-ldflags "-X main.version=${VERSION} -X main.commit=$$(git rev-parse --short HEAD 2>/dev/null || echo \"none\")" \
+		-o bin/$(OUTPUT_DIR)$(BINARY_NAME) \
+		-tags memory,postgres\
+		cli/main.go
 build-ticker-linux_amd64: build-prerequisites
 	$(MAKE) GOOS=linux GOARCH=amd64 OUTPUT_DIR=linux_amd64/ build
 build-ticker-darwin_amd64: build-prerequisites
