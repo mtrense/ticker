@@ -17,7 +17,7 @@ message Subscription {
   string subscription_id = 1;
   repeated string aggregate = 2;
   string type = 3;
-  uint64 first_sequence = 4;
+  int64 first_sequence = 4;
 }
 
 message Event {
