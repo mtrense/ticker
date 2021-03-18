@@ -1,44 +1,51 @@
 package base
 
 import (
+	"context"
 	"math"
 	"time"
 )
 
 type Event struct {
-	Sequence   int
-	Aggregate  []string
-	Type       string
-	OccurredAt time.Time
-	Payload    map[string]interface{}
+	Sequence   int64                  `json:"sequence,omitempty" yaml:"sequence,omitempty"`
+	Aggregate  []string               `json:"aggregate,omitempty" yaml:"aggregate,omitempty"`
+	Type       string                 `json:"type,omitempty" yaml:"type,omitempty"`
+	OccurredAt time.Time              `json:"occurred_at,omitempty" yaml:"occurred_at,omitempty"`
+	Payload    map[string]interface{} `json:"payload,omitempty" yaml:"payload,omitempty"`
 }
 
 type EventHandler func(e *Event)
-type EventHandlerWithCancel func(e *Event) bool
 
 type EventStream interface {
-	Store(event *Event) (int, error)
-	LastSequence() int
-	Get(sequence int) (*Event, error)
-	Slice(startSequence, endSequence int, handler EventHandlerWithCancel) error
-	Subscribe(handler EventHandler, sel Selector) func()
+	Store(event *Event) (int64, error)
+	LastSequence() int64
+	Get(sequence int64) (*Event, error)
+	Slice(ctx context.Context, startSequence, endSequence int64, handler EventHandler) error
+	Subscribe(ctx context.Context, persistentClientID string, handler EventHandler, sel Selector) (Subscription, error)
+}
+
+type Subscription interface {
+	PersistentClientID() string
+	ActiveSelector() Selector
+	LastAcknowledgedSequence() int64
+	Acknowledge(sequence int64) error
 }
 
 type Selector struct {
-	Aggregate     []string
-	Type          string
-	FirstSequence int
-	LastSequence  int
+	Aggregate    []string
+	Type         string
+	NextSequence int64
+	LastSequence int64
 }
 
 type SelectOption func(s *Selector)
 
 func Select(options ...SelectOption) Selector {
 	sel := Selector{
-		Aggregate:     nil,
-		Type:          "",
-		FirstSequence: 1,
-		LastSequence:  math.MaxInt64,
+		Aggregate:    []string{},
+		Type:         "",
+		NextSequence: 1,
+		LastSequence: math.MaxInt64,
 	}
 	for _, opt := range options {
 		opt(&sel)
@@ -52,9 +59,15 @@ func SelectType(t string) SelectOption {
 	}
 }
 
-func SelectRange(first, last int) SelectOption {
+func SelectStart(next int64) SelectOption {
 	return func(s *Selector) {
-		s.FirstSequence = first
+		s.NextSequence = next
+	}
+}
+
+func SelectRange(first, last int64) SelectOption {
+	return func(s *Selector) {
+		s.NextSequence = first
 		s.LastSequence = last
 	}
 }
@@ -66,10 +79,10 @@ func SelectAggregate(agg ...string) SelectOption {
 }
 
 func (s *Selector) Matches(event *Event) bool {
-	if s.Type != event.Type {
+	if s.Type != "" && s.Type != event.Type {
 		return false
 	}
-	if s.FirstSequence > event.Sequence {
+	if s.NextSequence > event.Sequence {
 		return false
 	}
 	if s.LastSequence < event.Sequence {
