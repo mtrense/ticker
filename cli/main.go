@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"syscall"
+	"time"
+
+	"github.com/mtrense/ticker/eventstream"
+
+	"github.com/mtrense/ticker/support"
 
 	"github.com/mtrense/soil/logging"
 
@@ -28,7 +34,19 @@ var (
 		),
 		SubCommand("client",
 			Short("Run the ticker client"),
-			Flag("connect", Str(""), Description("Server to connect to"), Mandatory(), Persistent(), Env()),
+			Flag("connect", Str("localhost:6677"), Description("Server to connect to"), Mandatory(), Persistent(), Env()),
+			SubCommand("emit",
+				Short("Emit specified event"),
+				Run(executeClientEmit),
+			),
+			SubCommand("sample",
+				Short("Emit sample events"),
+				Run(executeClientSample),
+			),
+			SubCommand("subscribe",
+				Short("Subscribe to a specific event stream"),
+				Run(executeClientSubscribe),
+			),
 			SubCommand("metrics",
 				Short("Show live metrics of the ticker server"),
 				Run(executeClientMetrics),
@@ -53,28 +71,48 @@ func main() {
 
 func executeServer(cmd *cobra.Command, args []string) {
 	listen := viper.GetString("listen")
-	srv := server.NewServer(listen, version)
+	es := eventstream.NewMemoryEventStream()
+	srv := server.NewServer(listen, version, es)
 	if err := srv.Start(); err != nil {
 		panic(err)
 	}
 }
 
+func executeClientEmit(cmd *cobra.Command, args []string) {
+	conn := clientConnect()
+	_ = rpc.NewEventStreamClient(conn)
+}
+
+func executeClientSample(cmd *cobra.Command, args []string) {
+
+}
+
+func executeClientSubscribe(cmd *cobra.Command, args []string) {
+
+}
+
 func executeClientMetrics(cmd *cobra.Command, args []string) {
+	conn := clientConnect()
+	admin := rpc.NewAdminClient(conn)
+	ctx := support.CancelContextOnSignals(context.Background(), syscall.SIGINT)
+	for {
+		if state, err := admin.GetServerState(ctx, &emptypb.Empty{}); err == nil {
+			fmt.Printf("uptime: %5d   |   active connections: %3d   |   events stored: %8d\n", state.Uptime, state.ConnectionCount, state.EventCount)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(2 * time.Second):
+		}
+	}
+}
+
+func clientConnect() *grpc.ClientConn {
 	connect := viper.GetString("connect")
 	if conn, err := grpc.Dial(connect, grpc.WithInsecure()); err != nil {
 		panic(err)
 	} else {
-		admin := rpc.NewAdminClient(conn)
-		ctx, cancel := context.WithCancel(context.Background())
-		num := 0
-		if state, err := admin.GetServerState(ctx, &emptypb.Empty{}); err != nil {
-			panic(err)
-		} else {
-			fmt.Printf("uptime: %d\nactive connections: %d\n", state.Uptime, state.ConnectionCount)
-			num += 1
-			if num > 10 {
-				cancel()
-			}
-		}
+		return conn
 	}
+	return nil
 }
