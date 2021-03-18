@@ -7,6 +7,7 @@ go 1.15
 require (
 	github.com/AlecAivazis/survey/v2 v2.2.7 // indirect
 	github.com/c-bata/go-prompt v0.2.5 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/mtrense/soil v0.3.0
 	github.com/onsi/ginkgo v1.15.1
