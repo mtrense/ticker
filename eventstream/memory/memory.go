@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	es "github.com/mtrense/ticker/eventstream/base"
 )
@@ -33,7 +34,9 @@ func (s *EventStream) Store(event *es.Event) (int64, error) {
 	event.Sequence = seq
 	s.events = append(s.events, event)
 	for _, sub := range s.subscriptions {
-		sub.publishEvent(event)
+		if sub.active {
+			sub.publishEvent(event)
+		}
 	}
 	return event.Sequence, nil
 }
@@ -80,6 +83,7 @@ func (s *EventStream) attachSubscription(sub *Subscription) (int64, error) {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 	sub.buffer = make(chan *es.Event, s.defaultBufferSize)
+	sub.active = true
 	sub.live = true
 	return s.LastSequence(), nil
 }
@@ -87,5 +91,7 @@ func (s *EventStream) attachSubscription(sub *Subscription) (int64, error) {
 func (s *EventStream) unsubscribe(sub *Subscription) {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
-	delete(s.subscriptions, sub.clientID)
+	sub.active = false
+	sub.inactiveSince = time.Now()
+	close(sub.buffer)
 }

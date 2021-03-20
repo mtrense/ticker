@@ -43,9 +43,8 @@ var _ = Describe("MemoryEventStream", func() {
 	})
 
 	It("Subscribe adds a subscription", func() {
-		s := New()
-		w := es.NewWrapper(s)
-		Expect(len(s.subscriptions)).To(Equal(0))
+		w := es.NewWrapper(New())
+		Expect(len(w.Stream().Subscriptions())).To(Equal(0))
 		ctx := context.Background()
 		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {})
 		Expect(len(w.Stream().Subscriptions())).To(Equal(1))
@@ -54,17 +53,16 @@ var _ = Describe("MemoryEventStream", func() {
 	It("Subscription is live when returned", func() {
 		s := New()
 		w := es.NewWrapper(s)
-		Expect(len(s.subscriptions)).To(Equal(0))
+		Expect(len(w.Stream().Subscriptions())).To(Equal(0))
 		ctx := context.Background()
 		sub, _ := w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {})
 		Expect(len(w.Stream().Subscriptions())).To(Equal(1))
 		Expect(sub.(*Subscription).live).To(BeTrue())
 	})
 
-	It("Subscribe adds a subscription and cancelling the context eventually removes it again", func() {
-		s := New()
-		w := es.NewWrapper(s)
-		Expect(len(s.subscriptions)).To(Equal(0))
+	It("Subscribe adds an subscription and cancelling the context eventually disables it", func() {
+		w := es.NewWrapper(New())
+		Expect(len(w.Stream().Subscriptions())).To(Equal(0))
 		ctx, cancel := context.WithCancel(context.Background())
 		sub, _ := w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {})
 		Expect(len(w.Stream().Subscriptions())).To(Equal(1))

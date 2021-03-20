@@ -5,6 +5,7 @@ package memory
 import (
 	"context"
 	"sync/atomic"
+	"time"
 
 	es "github.com/mtrense/ticker/eventstream/base"
 )
@@ -13,6 +14,8 @@ type Subscription struct {
 	stream                   *EventStream
 	clientID                 string
 	live                     bool
+	active                   bool
+	inactiveSince            time.Time
 	activeSelector           es.Selector
 	lastAcknowledgedSequence int64
 	buffer                   chan *es.Event
@@ -36,10 +39,6 @@ func (s *Subscription) PersistentClientID() string {
 func (s *Subscription) ActiveSelector() es.Selector {
 	return s.activeSelector
 }
-
-//func (s *Subscription) Active() bool {
-//	return
-//}
 
 func (s *Subscription) LastAcknowledgedSequence() int64 {
 	return s.lastAcknowledgedSequence
