@@ -20,8 +20,8 @@ type EventStream interface {
 	Store(event *Event) (int64, error)
 	LastSequence() int64
 	Get(sequence int64) (*Event, error)
-	Slice(ctx context.Context, startSequence, endSequence int64, handler EventHandler) error
-	Subscribe(ctx context.Context, persistentClientID string, handler EventHandler, sel Selector) (Subscription, error)
+	Stream(ctx context.Context, sel Selector, bracket Bracket, handler EventHandler) error
+	Subscribe(ctx context.Context, persistentClientID string, sel Selector, handler EventHandler) (Subscription, error)
 }
 
 type Subscription interface {
@@ -32,20 +32,16 @@ type Subscription interface {
 }
 
 type Selector struct {
-	Aggregate    []string
-	Type         string
-	NextSequence int64
-	LastSequence int64
+	Aggregate []string
+	Type      string
 }
 
 type SelectOption func(s *Selector)
 
 func Select(options ...SelectOption) Selector {
 	sel := Selector{
-		Aggregate:    []string{},
-		Type:         "",
-		NextSequence: 1,
-		LastSequence: math.MaxInt64,
+		Aggregate: []string{},
+		Type:      "",
 	}
 	for _, opt := range options {
 		opt(&sel)
@@ -59,19 +55,6 @@ func SelectType(t string) SelectOption {
 	}
 }
 
-func SelectStart(next int64) SelectOption {
-	return func(s *Selector) {
-		s.NextSequence = next
-	}
-}
-
-func SelectRange(first, last int64) SelectOption {
-	return func(s *Selector) {
-		s.NextSequence = first
-		s.LastSequence = last
-	}
-}
-
 func SelectAggregate(agg ...string) SelectOption {
 	return func(s *Selector) {
 		s.Aggregate = agg
@@ -80,12 +63,6 @@ func SelectAggregate(agg ...string) SelectOption {
 
 func (s *Selector) Matches(event *Event) bool {
 	if s.Type != "" && s.Type != event.Type {
-		return false
-	}
-	if s.NextSequence > event.Sequence {
-		return false
-	}
-	if s.LastSequence < event.Sequence {
 		return false
 	}
 	if len(s.Aggregate) > len(event.Aggregate) {
@@ -97,4 +74,30 @@ func (s *Selector) Matches(event *Event) bool {
 		}
 	}
 	return true
+}
+
+type Bracket struct {
+	NextSequence int64
+	LastSequence int64
+}
+
+func All() Bracket {
+	return Bracket{
+		NextSequence: 1,
+		LastSequence: math.MaxInt64,
+	}
+}
+
+func Range(next, last int64) Bracket {
+	return Bracket{
+		NextSequence: next,
+		LastSequence: last,
+	}
+}
+
+func From(next int64) Bracket {
+	return Bracket{
+		NextSequence: next,
+		LastSequence: math.MaxInt64,
+	}
 }

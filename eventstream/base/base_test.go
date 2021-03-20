@@ -10,7 +10,7 @@ var _ = Describe("Base", func() {
 		sel := Select()
 		Expect(sel.Type).To(Equal(""))
 		Expect(sel.Aggregate).To(Equal([]string{}))
-		Expect(sel.NextSequence).To(Equal(int64(1)))
+		//Expect(sel.NextSequence).To(Equal(int64(1)))
 		//Expect(sel.LastSequence).To(Equal(int64(math.MaxUint64)))
 	})
 	It("A catch-all Selector matches", func() {

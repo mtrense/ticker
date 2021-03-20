@@ -63,14 +63,14 @@ func (s *Subscription) publishEvent(event *es.Event) {
 
 func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventHandler) error {
 	// TODO Handle already subscribed
-	nextSequence := s.activeSelector.NextSequence
+	nextSequence := int64(1)
 	lastKnownSequence, err := s.stream.attachSubscription(s)
 	if err != nil {
 		return err
 	}
 	go func() {
 		for {
-			err := s.stream.Slice(ctx, nextSequence, lastKnownSequence, func(e *es.Event) {
+			err := s.stream.Stream(ctx, s.activeSelector, es.Range(nextSequence, lastKnownSequence), func(e *es.Event) {
 				if s.activeSelector.Matches(e) {
 					handler(e)
 				}

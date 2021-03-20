@@ -25,7 +25,7 @@ var _ = Describe("MemoryEventStream", func() {
 		Expect(w.Stream().LastSequence()).To(Equal(int64(2)))
 	})
 
-	It("slices the EventStream correctly", func() {
+	It("streams the EventStream correctly", func() {
 		w := es.NewWrapper(New())
 		w.Emit()
 		w.Emit()
@@ -34,7 +34,7 @@ var _ = Describe("MemoryEventStream", func() {
 		Expect(w.Stream().LastSequence()).To(Equal(int64(4)))
 		var events []*es.Event
 		ctx := context.Background()
-		w.Stream().Slice(ctx, 2, 3, func(e *es.Event) {
+		w.Stream().Stream(ctx, es.Select(), es.Range(2, 3), func(e *es.Event) {
 			events = append(events, e)
 		})
 		Expect(len(events)).To(Equal(2))
@@ -47,11 +47,8 @@ var _ = Describe("MemoryEventStream", func() {
 		w := es.NewWrapper(s)
 		Expect(len(s.subscriptions)).To(Equal(0))
 		ctx := context.Background()
-		_, _ = w.Stream().Subscribe(ctx, "test", func(e *es.Event) {}, es.Select())
-		Expect(len(s.subscriptions)).To(Equal(1))
-		//time.Sleep(5 * time.Millisecond)
-		//w.Emit()
-		//Expect(len(s.subscriptions)).To(Equal(0))
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {})
+		Expect(len(w.Stream().Subscriptions())).To(Equal(1))
 	})
 
 	It("Subscription is live when returned", func() {
@@ -59,8 +56,8 @@ var _ = Describe("MemoryEventStream", func() {
 		w := es.NewWrapper(s)
 		Expect(len(s.subscriptions)).To(Equal(0))
 		ctx := context.Background()
-		sub, _ := w.Stream().Subscribe(ctx, "test", func(e *es.Event) {}, es.Select())
-		Expect(len(s.subscriptions)).To(Equal(1))
+		sub, _ := w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {})
+		Expect(len(w.Stream().Subscriptions())).To(Equal(1))
 		Expect(sub.(*Subscription).live).To(BeTrue())
 	})
 
@@ -69,10 +66,10 @@ var _ = Describe("MemoryEventStream", func() {
 		w := es.NewWrapper(s)
 		Expect(len(s.subscriptions)).To(Equal(0))
 		ctx, cancel := context.WithCancel(context.Background())
-		_, _ = w.Stream().Subscribe(ctx, "test", func(e *es.Event) {}, es.Select())
-		Expect(len(s.subscriptions)).To(Equal(1))
+		sub, _ := w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {})
+		Expect(len(w.Stream().Subscriptions())).To(Equal(1))
 		cancel()
-		Eventually(func() int { return len(s.subscriptions) }).Should(Equal(0))
+		Eventually(func() bool { return sub.Active() }).Should(BeFalse())
 	})
 
 	It("stores the right sequence for sequentially stored Events", func() {
@@ -90,9 +87,9 @@ var _ = Describe("MemoryEventStream", func() {
 		w := es.NewWrapper(New())
 		var counter int
 		ctx := context.Background()
-		_, _ = w.Stream().Subscribe(ctx, "test", func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {
 			counter++
-		}, es.Select())
+		})
 		w.Emit(w.Agg("test", "1"))
 		w.Emit(w.Agg("test", "2"))
 		Expect(w.Stream().LastSequence()).To(Equal(int64(2)))
@@ -103,9 +100,9 @@ var _ = Describe("MemoryEventStream", func() {
 		w := es.NewWrapper(New())
 		var counter int
 		ctx := context.Background()
-		_, _ = w.Stream().Subscribe(ctx, "test", func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(es.SelectAggregate("test", "1")), func(e *es.Event) {
 			counter++
-		}, es.Select(es.SelectAggregate("test", "1")))
+		})
 		w.Emit(w.Agg("test", "1"))
 		w.Emit(w.Agg("test", "2"))
 		Expect(w.Stream().LastSequence()).To(Equal(int64(2)))
@@ -119,9 +116,9 @@ var _ = Describe("MemoryEventStream", func() {
 		Expect(w.Stream().LastSequence()).To(Equal(int64(2)))
 		var counter int
 		ctx := context.Background()
-		_, _ = w.Stream().Subscribe(ctx, "test", func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {
 			counter++
-		}, es.Select())
+		})
 		Eventually(func() int { return counter }).Should(Equal(2))
 	})
 
@@ -132,9 +129,9 @@ var _ = Describe("MemoryEventStream", func() {
 		Expect(w.Stream().LastSequence()).To(Equal(int64(2)))
 		var counter int
 		ctx := context.Background()
-		_, _ = w.Stream().Subscribe(ctx, "test", func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(es.SelectAggregate("test", "1")), func(e *es.Event) {
 			counter++
-		}, es.Select(es.SelectAggregate("test", "1")))
+		})
 		Eventually(func() int { return counter }).Should(Equal(1))
 	})
 
@@ -145,9 +142,9 @@ var _ = Describe("MemoryEventStream", func() {
 		Expect(w.Stream().LastSequence()).To(Equal(int64(2)))
 		var counter int
 		ctx := context.Background()
-		_, _ = w.Stream().Subscribe(ctx, "test", func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {
 			counter++
-		}, es.Select())
+		})
 		w.Emit(w.Agg("test", "1"))
 		w.Emit(w.Agg("test", "2"))
 		Eventually(func() int { return counter }).Should(Equal(4))
@@ -160,15 +157,15 @@ var _ = Describe("MemoryEventStream", func() {
 		Expect(w.Stream().LastSequence()).To(Equal(int64(2)))
 		var counter1 int
 		ctx := context.Background()
-		_, _ = w.Stream().Subscribe(ctx, "test1", func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test1", es.Select(), func(e *es.Event) {
 			counter1++
 			//fmt.Printf("%s", e.Type)
-		}, es.Select())
+		})
 		var counter2 int
-		_, _ = w.Stream().Subscribe(ctx, "test2", func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test2", es.Select(), func(e *es.Event) {
 			counter2++
 			//fmt.Println(e.Type)
-		}, es.Select())
+		})
 		w.Emit(w.Type("second"), w.Agg("test", "1"))
 		w.Emit(w.Type("second"), w.Agg("test", "2"))
 		Eventually(func() int { return counter1 }).Should(Equal(4))
@@ -186,9 +183,9 @@ var _ = Describe("MemoryEventStream", func() {
 		Expect(w.Stream().LastSequence()).To(Equal(int64(50)))
 		var counter int
 		ctx := context.Background()
-		_, _ = w.Stream().Subscribe(ctx, "test", func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {
 			counter++
-		}, es.Select())
+		})
 		for i := 0; i < 50; i++ {
 			agg := i % 8
 			w.Emit(w.Agg("test", strconv.Itoa(agg)))
@@ -207,11 +204,11 @@ var _ = Describe("MemoryEventStream", func() {
 		}
 		var counter int
 		ctx := context.Background()
-		_, _ = w.Stream().Subscribe(ctx, "test", func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(es.SelectAggregate("test", "1")), func(e *es.Event) {
 			counter++
-		}, es.Select(es.SelectStart(11)))
+		})
 		Expect(w.Stream().LastSequence()).To(Equal(int64(20)))
-		Eventually(func() int { return counter }).Should(Equal(10))
+		Eventually(func() int { return counter }).Should(Equal(3))
 	})
 
 })

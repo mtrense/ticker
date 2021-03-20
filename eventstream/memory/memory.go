@@ -46,17 +46,25 @@ func (s *EventStream) Get(sequence int64) (*es.Event, error) {
 	return s.events[sequence-1], nil
 }
 
-func (s *EventStream) Slice(ctx context.Context, startSequence, endSequence int64, handler es.EventHandler) error {
-	for _, event := range s.events[startSequence-1 : endSequence] {
+func (s *EventStream) Stream(ctx context.Context, sel es.Selector, bracket es.Bracket, handler es.EventHandler) error {
+	if bracket.NextSequence < 1 {
+		bracket.NextSequence = 1
+	}
+	if bracket.LastSequence > s.LastSequence() {
+		bracket.NextSequence = s.LastSequence()
+	}
+	for _, event := range s.events[bracket.NextSequence-1 : bracket.LastSequence] {
 		if err := ctx.Err(); errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return nil
 		}
-		handler(event)
+		if sel.Matches(event) {
+			handler(event)
+		}
 	}
 	return nil
 }
 
-func (s *EventStream) Subscribe(ctx context.Context, persistentClientID string, handler es.EventHandler, sel es.Selector) (es.Subscription, error) {
+func (s *EventStream) Subscribe(ctx context.Context, persistentClientID string, sel es.Selector, handler es.EventHandler) (es.Subscription, error) {
 	s.writeLock.Lock()
 	sub, present := s.subscriptions[persistentClientID]
 	if !present {
