@@ -5,7 +5,7 @@ import "google/protobuf/empty.proto";
 
 option go_package = "github.com/mtrense/ticker/rpc";
 
-service Admin {
+service Maintenance {
   rpc GetServerState(google.protobuf.Empty) returns (ServerState);
   rpc Shutdown(ShutdownParameters) returns (google.protobuf.Empty);
 }

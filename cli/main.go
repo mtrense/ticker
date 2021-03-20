@@ -93,7 +93,7 @@ func executeClientSubscribe(cmd *cobra.Command, args []string) {
 
 func executeClientMetrics(cmd *cobra.Command, args []string) {
 	conn := clientConnect()
-	admin := rpc.NewAdminClient(conn)
+	admin := rpc.NewMaintenanceClient(conn)
 	ctx := support.CancelContextOnSignals(context.Background(), syscall.SIGINT)
 	for {
 		if state, err := admin.GetServerState(ctx, &emptypb.Empty{}); err == nil {

@@ -22,13 +22,13 @@ import (
 )
 
 type Server struct {
-	listen          string
-	version         string
-	streamBackend   base.EventStream
-	streamServer    *eventStreamServer
-	adminServer     *adminServer
-	connectionCount int32
-	startTime       time.Time
+	listen            string
+	version           string
+	streamBackend     base.EventStream
+	streamServer      *eventStreamServer
+	maintenanceServer *maintenanceServer
+	connectionCount   int32
+	startTime         time.Time
 }
 
 func NewServer(listen string, version string, backend base.EventStream) *Server {
@@ -40,7 +40,7 @@ func NewServer(listen string, version string, backend base.EventStream) *Server 
 	srv.streamServer = &eventStreamServer{
 		server: srv,
 	}
-	srv.adminServer = &adminServer{
+	srv.maintenanceServer = &maintenanceServer{
 		server: srv,
 	}
 	return srv
@@ -65,7 +65,7 @@ func (s *Server) Start() error {
 		}
 	}()
 	rpc.RegisterEventStreamServer(srv, s.streamServer)
-	rpc.RegisterAdminServer(srv, s.adminServer)
+	rpc.RegisterMaintenanceServer(srv, s.maintenanceServer)
 	reflection.Register(srv)
 	return srv.Serve(listener)
 }
