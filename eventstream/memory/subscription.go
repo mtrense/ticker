@@ -32,7 +32,7 @@ func newSubscription(stream *EventStream, clientID string, sel es.Selector) *Sub
 	}
 }
 
-func (s *Subscription) PersistentClientID() string {
+func (s *Subscription) PersistentID() string {
 	return s.clientID
 }
 
@@ -105,4 +105,16 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 		}
 	}()
 	return nil
+}
+
+func (s *Subscription) Active() bool {
+	return s.active
+}
+
+func (s *Subscription) InactiveSince() time.Time {
+	return s.inactiveSince
+}
+
+func (s *Subscription) Drop() {
+
 }

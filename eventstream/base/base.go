@@ -22,13 +22,19 @@ type EventStream interface {
 	Get(sequence int64) (*Event, error)
 	Stream(ctx context.Context, sel Selector, bracket Bracket, handler EventHandler) error
 	Subscribe(ctx context.Context, persistentClientID string, sel Selector, handler EventHandler) (Subscription, error)
+	// Maintenance functionality
+	Subscriptions() []Subscription
 }
 
 type Subscription interface {
-	PersistentClientID() string
+	PersistentID() string
 	ActiveSelector() Selector
 	LastAcknowledgedSequence() int64
 	Acknowledge(sequence int64) error
+	// Maintenance functionality
+	Active() bool
+	InactiveSince() time.Time
+	Drop()
 }
 
 type Selector struct {

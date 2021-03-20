@@ -95,3 +95,11 @@ func (s *EventStream) unsubscribe(sub *Subscription) {
 	sub.inactiveSince = time.Now()
 	close(sub.buffer)
 }
+
+func (s *EventStream) Subscriptions() []es.Subscription {
+	result := make([]es.Subscription, 0, len(s.subscriptions))
+	for _, sub := range s.subscriptions {
+		result = append(result, sub)
+	}
+	return result
+}
