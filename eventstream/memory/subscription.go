@@ -20,6 +20,7 @@ type Subscription struct {
 	lastAcknowledgedSequence int64
 	buffer                   chan *es.Event
 	handler                  es.EventHandler
+	dropOuts                 int
 	lastError                error
 }
 
@@ -56,6 +57,7 @@ func (s *Subscription) publishEvent(event *es.Event) {
 		default:
 			close(s.buffer)
 			s.live = false
+			s.dropOuts += 1
 		}
 	}
 }
@@ -113,6 +115,10 @@ func (s *Subscription) Active() bool {
 
 func (s *Subscription) InactiveSince() time.Time {
 	return s.inactiveSince
+}
+
+func (s *Subscription) DropOuts() int {
+	return s.dropOuts
 }
 
 func (s *Subscription) Drop() {

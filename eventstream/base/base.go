@@ -34,6 +34,7 @@ type Subscription interface {
 	// Maintenance functionality
 	Active() bool
 	InactiveSince() time.Time
+	DropOuts() int
 	Drop()
 }
 
