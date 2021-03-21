@@ -26,10 +26,11 @@ type Subscription struct {
 
 func newSubscription(stream *EventStream, clientID string, sel es.Selector) *Subscription {
 	return &Subscription{
-		stream:         stream,
-		clientID:       clientID,
-		live:           false,
-		activeSelector: sel,
+		stream:                   stream,
+		clientID:                 clientID,
+		live:                     false,
+		activeSelector:           sel,
+		lastAcknowledgedSequence: 0,
 	}
 }
 
@@ -63,8 +64,7 @@ func (s *Subscription) publishEvent(event *es.Event) {
 }
 
 func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventHandler) error {
-	// TODO Handle already subscribed
-	nextSequence := int64(1)
+	nextSequence := s.LastAcknowledgedSequence() + 1
 	lastKnownSequence, err := s.stream.attachSubscription(s)
 	if err != nil {
 		return err
@@ -75,6 +75,7 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 				if s.activeSelector.Matches(e) {
 					handler(e)
 				}
+				s.lastAcknowledgedSequence = e.Sequence
 				nextSequence = e.Sequence + 1
 			})
 			if err != nil {
@@ -97,6 +98,7 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 						if s.activeSelector.Matches(event) {
 							handler(event)
 						}
+						s.lastAcknowledgedSequence = event.Sequence
 						nextSequence = event.Sequence + 1
 					}
 				case <-ctx.Done():
