@@ -35,7 +35,7 @@ type Subscription interface {
 	Active() bool
 	InactiveSince() time.Time
 	DropOuts() int
-	Drop()
+	Shutdown()
 }
 
 type Selector struct {

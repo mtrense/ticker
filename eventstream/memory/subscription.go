@@ -123,6 +123,6 @@ func (s *Subscription) DropOuts() int {
 	return s.dropOuts
 }
 
-func (s *Subscription) Drop() {
+func (s *Subscription) Shutdown() {
 
 }
