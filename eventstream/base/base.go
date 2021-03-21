@@ -22,7 +22,7 @@ type EventStream interface {
 	Get(sequence int64) (*Event, error)
 	Stream(ctx context.Context, sel Selector, bracket Bracket, handler EventHandler) error
 	Subscribe(ctx context.Context, persistentClientID string, sel Selector, handler EventHandler) (Subscription, error)
-	// Maintenance functionality
+	// Returns all currently known Subscriptions
 	Subscriptions() []Subscription
 }
 
@@ -31,10 +31,13 @@ type Subscription interface {
 	ActiveSelector() Selector
 	LastAcknowledgedSequence() int64
 	Acknowledge(sequence int64) error
-	// Maintenance functionality
+	// Returns whether this Subscription is currently active.
 	Active() bool
+	// Returns the time this Subscription last became inactive.
 	InactiveSince() time.Time
+	// Returns how often this Subscription has dropped out of the live stream.
 	DropOuts() int
+	// Closes this Subscription and removes all associated state. A Subscription can not be resumed after this call.
 	Shutdown()
 }
 
