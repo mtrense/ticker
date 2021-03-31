@@ -30,7 +30,7 @@ type Subscription interface {
 	PersistentID() string
 	// Returns the currently active Selector.
 	ActiveSelector() Selector
-	LastAcknowledgedSequence() int64
+	LastAcknowledgedSequence() (int64, error)
 	Acknowledge(sequence int64) error
 	// Returns whether this Subscription is currently active.
 	Active() bool
