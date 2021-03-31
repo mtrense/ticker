@@ -22,12 +22,13 @@ type EventStream interface {
 	Get(sequence int64) (*Event, error)
 	Stream(ctx context.Context, sel Selector, bracket Bracket, handler EventHandler) error
 	Subscribe(ctx context.Context, persistentClientID string, sel Selector, handler EventHandler) (Subscription, error)
-	// Returns all currently known Subscriptions
+	// Returns all currently known Subscriptions.
 	Subscriptions() []Subscription
 }
 
 type Subscription interface {
 	PersistentID() string
+	// Returns the currently active Selector.
 	ActiveSelector() Selector
 	LastAcknowledgedSequence() int64
 	Acknowledge(sequence int64) error
