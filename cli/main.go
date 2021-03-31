@@ -6,7 +6,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mtrense/ticker/eventstream"
+	es "github.com/mtrense/ticker/eventstream"
 
 	"github.com/mtrense/ticker/support"
 
@@ -71,8 +71,8 @@ func main() {
 
 func executeServer(cmd *cobra.Command, args []string) {
 	listen := viper.GetString("listen")
-	es := eventstream.NewMemoryEventStream()
-	srv := server.NewServer(listen, version, es)
+	stream := es.NewMemoryEventStream(es.NewMemorySequenceStore())
+	srv := server.NewServer(listen, version, stream)
 	if err := srv.Start(); err != nil {
 		panic(err)
 	}
