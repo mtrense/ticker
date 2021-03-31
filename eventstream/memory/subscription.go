@@ -4,33 +4,30 @@ package memory
 
 import (
 	"context"
-	"sync/atomic"
 	"time"
 
 	es "github.com/mtrense/ticker/eventstream/base"
 )
 
 type Subscription struct {
-	stream                   *EventStream
-	clientID                 string
-	live                     bool
-	active                   bool
-	inactiveSince            time.Time
-	activeSelector           es.Selector
-	lastAcknowledgedSequence int64
-	buffer                   chan *es.Event
-	handler                  es.EventHandler
-	dropOuts                 int
-	lastError                error
+	stream         *EventStream
+	clientID       string
+	live           bool
+	active         bool
+	inactiveSince  time.Time
+	activeSelector es.Selector
+	buffer         chan *es.Event
+	handler        es.EventHandler
+	dropOuts       int
+	lastError      error
 }
 
 func newSubscription(stream *EventStream, clientID string, sel es.Selector) *Subscription {
 	return &Subscription{
-		stream:                   stream,
-		clientID:                 clientID,
-		live:                     false,
-		activeSelector:           sel,
-		lastAcknowledgedSequence: 0,
+		stream:         stream,
+		clientID:       clientID,
+		live:           false,
+		activeSelector: sel,
 	}
 }
 
@@ -42,13 +39,12 @@ func (s *Subscription) ActiveSelector() es.Selector {
 	return s.activeSelector
 }
 
-func (s *Subscription) LastAcknowledgedSequence() int64 {
-	return s.lastAcknowledgedSequence
+func (s *Subscription) LastAcknowledgedSequence() (int64, error) {
+	return s.stream.sequenceStore.Get(s.clientID)
 }
 
 func (s *Subscription) Acknowledge(sequence int64) error {
-	atomic.StoreInt64(&s.lastAcknowledgedSequence, sequence)
-	return nil
+	return s.stream.sequenceStore.Store(s.clientID, sequence)
 }
 
 func (s *Subscription) publishEvent(event *es.Event) {
@@ -64,7 +60,11 @@ func (s *Subscription) publishEvent(event *es.Event) {
 }
 
 func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventHandler) error {
-	nextSequence := s.LastAcknowledgedSequence() + 1
+	lastSequence, err := s.LastAcknowledgedSequence()
+	if err != nil {
+		return err
+	}
+	nextSequence := lastSequence + 1
 	lastKnownSequence, err := s.stream.attachSubscription(s)
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 				if s.activeSelector.Matches(e) {
 					handler(e)
 				}
-				s.lastAcknowledgedSequence = e.Sequence
+				s.Acknowledge(e.Sequence)
 				nextSequence = e.Sequence + 1
 			})
 			if err != nil {
@@ -98,7 +98,7 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 						if s.activeSelector.Matches(event) {
 							handler(event)
 						}
-						s.lastAcknowledgedSequence = event.Sequence
+						s.Acknowledge(event.Sequence)
 						nextSequence = event.Sequence + 1
 					}
 				case <-ctx.Done():
