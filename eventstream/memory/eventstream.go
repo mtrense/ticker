@@ -12,16 +12,17 @@ import (
 )
 
 type EventStream struct {
-	upstream          es.EventStream
 	events            []*es.Event
 	writeLock         sync.Mutex
+	sequenceStore     es.SequenceStore
 	subscriptions     map[string]*Subscription
 	defaultBufferSize int
 }
 
-func New() *EventStream {
+func New(sequenceStore es.SequenceStore) *EventStream {
 	return &EventStream{
 		defaultBufferSize: 100,
+		sequenceStore:     sequenceStore,
 		subscriptions:     make(map[string]*Subscription),
 	}
 }

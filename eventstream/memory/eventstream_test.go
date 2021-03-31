@@ -11,13 +11,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("MemoryEventStream", func() {
+var _ = Describe("memory/eventstream", func() {
 	es.EventStreamSampleGroup(func() es.EventStream {
-		return New()
+		return New(NewMemorySequenceStore())
 	})
 
 	It("Subscription is live when returned", func() {
-		w := es.NewWrapper(New())
+		w := es.NewWrapper(New(NewMemorySequenceStore()))
 		Expect(len(w.Stream().Subscriptions())).To(Equal(0))
 		ctx := context.Background()
 		sub, _ := w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {})
@@ -26,7 +26,7 @@ var _ = Describe("MemoryEventStream", func() {
 	})
 
 	It("handles a large amount of fast Events", func() {
-		s := New()
+		s := New(NewMemorySequenceStore())
 		s.defaultBufferSize = 10
 		w := es.NewWrapper(s)
 		for i := 0; i < 50; i++ {
@@ -48,7 +48,7 @@ var _ = Describe("MemoryEventStream", func() {
 	})
 
 	It("Subscription properly handles selections", func() {
-		s := New()
+		s := New(NewMemorySequenceStore())
 		s.defaultBufferSize = 10
 		w := es.NewWrapper(s)
 		for i := 0; i < 20; i++ {
