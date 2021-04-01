@@ -9,15 +9,30 @@ option go_package = "github.com/mtrense/ticker/rpc";
 
 service EventStream {
   rpc Emit(Event) returns (Ack);
-  rpc Subscribe(Subscription) returns (stream Event);
+  rpc Stream(StreamRequest) returns (stream Event);
+  rpc Subscribe(SubscriptionRequest) returns (stream Event);
   rpc Acknowledge(stream Ack) returns (google.protobuf.Empty);
 }
 
-message Subscription {
-  string subscription_id = 1;
-  repeated string aggregate = 2;
-  string type = 3;
-  int64 first_sequence = 4;
+message StreamRequest {
+  Bracket bracket = 1;
+  Selector selector = 2;
+}
+
+message SubscriptionRequest {
+  string persistent_client_id = 1;
+//  Bracket bracket = 2;
+  Selector selector = 3;
+}
+
+message Bracket {
+  int64 first_sequence = 1;
+  int64 last_sequence = 2;
+}
+
+message Selector {
+  repeated string aggregate = 1;
+  string type = 2;
 }
 
 message Event {
