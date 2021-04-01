@@ -1,3 +1,0 @@
-// +build postgres
-
-package eventstream
