@@ -16,7 +16,7 @@ import (
 var _ = Describe("memory/event_stream", func() {
 	It("handles a large amount of Events with delays", func() {
 		totalCount := 100
-		s := New(NewMemorySequenceStore())
+		s := NewMemoryEventStream(NewMemorySequenceStore())
 		s.defaultBufferSize = 10
 		w := es.NewWrapper(s)
 		go func() {
@@ -38,7 +38,7 @@ var _ = Describe("memory/event_stream", func() {
 
 	It("handles a large amount of Events on slow Subscribers", func() {
 		totalCount := 100
-		s := New(NewMemorySequenceStore())
+		s := NewMemoryEventStream(NewMemorySequenceStore())
 		s.defaultBufferSize = 10
 		w := es.NewWrapper(s)
 		go func() {
@@ -60,7 +60,7 @@ var _ = Describe("memory/event_stream", func() {
 
 	It("handles a large amount of Events on multiple slow Subscribers", func() {
 		totalCount := 100
-		s := New(NewMemorySequenceStore())
+		s := NewMemoryEventStream(NewMemorySequenceStore())
 		s.defaultBufferSize = 10
 		w := es.NewWrapper(s)
 		go func() {
@@ -88,7 +88,7 @@ var _ = Describe("memory/event_stream", func() {
 
 	It("handles Events on really slow Subscribers", func() {
 		totalCount := 20
-		s := New(NewMemorySequenceStore())
+		s := NewMemoryEventStream(NewMemorySequenceStore())
 		s.defaultBufferSize = 10
 		w := es.NewWrapper(s)
 		go func() {

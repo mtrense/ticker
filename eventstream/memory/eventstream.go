@@ -19,12 +19,18 @@ type EventStream struct {
 	defaultBufferSize int
 }
 
-func New(sequenceStore es.SequenceStore) *EventStream {
-	return &EventStream{
+type Option = func(s *EventStream)
+
+func NewMemoryEventStream(sequenceStore es.SequenceStore, opts ...Option) *EventStream {
+	s := &EventStream{
 		defaultBufferSize: 100,
 		sequenceStore:     sequenceStore,
 		subscriptions:     make(map[string]*Subscription),
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 func (s *EventStream) Store(event *es.Event) (int64, error) {
