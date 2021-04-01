@@ -38,6 +38,36 @@ func EventStreamSampleGroup(factory func() EventStream) {
 		Expect(events[1].Sequence).To(Equal(int64(3)))
 	})
 
+	It("Stream respects the EventStream's LastSequence when lower Bracket is too small", func() {
+		w := NewWrapper(factory())
+		w.Emit()
+		w.Emit()
+		Expect(w.Stream().LastSequence()).To(Equal(int64(2)))
+		var events []*Event
+		ctx := context.Background()
+		w.Stream().Stream(ctx, Select(), Range(-1, 2), func(e *Event) {
+			events = append(events, e)
+		})
+		Expect(len(events)).To(Equal(2))
+		Expect(events[0].Sequence).To(Equal(int64(1)))
+		Expect(events[1].Sequence).To(Equal(int64(2)))
+	})
+
+	It("Stream respects the EventStream's LastSequence when upper Bracket is too high", func() {
+		w := NewWrapper(factory())
+		w.Emit()
+		w.Emit()
+		Expect(w.Stream().LastSequence()).To(Equal(int64(2)))
+		var events []*Event
+		ctx := context.Background()
+		w.Stream().Stream(ctx, Select(), Range(1, 5), func(e *Event) {
+			events = append(events, e)
+		})
+		Expect(len(events)).To(Equal(2))
+		Expect(events[0].Sequence).To(Equal(int64(1)))
+		Expect(events[1].Sequence).To(Equal(int64(2)))
+	})
+
 	It("Subscribe adds a subscription", func() {
 		w := NewWrapper(factory())
 		Expect(len(w.Stream().Subscriptions())).To(Equal(0))
