@@ -71,16 +71,18 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 	}
 	go func() {
 		for {
-			err := s.stream.Stream(ctx, s.activeSelector, es.Range(nextSequence, lastKnownSequence), func(e *es.Event) {
-				if s.activeSelector.Matches(e) {
-					handler(e)
+			if nextSequence <= lastKnownSequence {
+				err := s.stream.Stream(ctx, s.activeSelector, es.Range(nextSequence, lastKnownSequence), func(e *es.Event) {
+					if s.activeSelector.Matches(e) {
+						handler(e)
+					}
+					s.Acknowledge(e.Sequence)
+					nextSequence = e.Sequence + 1
+				})
+				if err != nil {
+					s.lastError = err
+					return
 				}
-				s.Acknowledge(e.Sequence)
-				nextSequence = e.Sequence + 1
-			})
-			if err != nil {
-				s.lastError = err
-				return
 			}
 		liveStream:
 			for {
