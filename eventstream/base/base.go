@@ -14,7 +14,7 @@ type Event struct {
 	Payload    map[string]interface{} `json:"payload,omitempty" yaml:"payload,omitempty"`
 }
 
-type EventHandler func(e *Event)
+type EventHandler func(e *Event) error
 
 type EventStream interface {
 	Store(event *Event) (int64, error)

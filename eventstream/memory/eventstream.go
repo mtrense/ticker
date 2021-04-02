@@ -71,7 +71,9 @@ func (s *EventStream) Stream(ctx context.Context, sel es.Selector, bracket es.Br
 			return nil
 		}
 		if sel.Matches(event) {
-			handler(event)
+			if err := handler(event); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

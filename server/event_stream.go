@@ -3,8 +3,6 @@ package server
 import (
 	"context"
 
-	"github.com/mtrense/soil/logging"
-
 	"github.com/golang/protobuf/ptypes"
 
 	es "github.com/mtrense/ticker/eventstream/base"
@@ -45,12 +43,9 @@ func (s *eventStreamServer) Stream(req *rpc.StreamRequest, stream rpc.EventStrea
 		NextSequence: req.Bracket.FirstSequence,
 		LastSequence: req.Bracket.LastSequence,
 	}
-	s.server.streamBackend.Stream(stream.Context(), selector, bracket, func(e *es.Event) {
+	s.server.streamBackend.Stream(stream.Context(), selector, bracket, func(e *es.Event) error {
 		ev := rpc.EventToProto(e)
-		err := stream.Send(ev)
-		if err != nil {
-			logging.L().Err(err).Msg("Couldn't send event")
-		}
+		return stream.Send(ev)
 	})
 	return nil
 }
@@ -61,9 +56,9 @@ func (s *eventStreamServer) Subscribe(req *rpc.SubscriptionRequest, stream rpc.E
 		Aggregate: req.Selector.Aggregate,
 		Type:      req.Selector.Type,
 	}
-	sub, err := s.server.streamBackend.Subscribe(stream.Context(), persistentClientID, selector, func(e *es.Event) {
+	sub, err := s.server.streamBackend.Subscribe(stream.Context(), persistentClientID, selector, func(e *es.Event) error {
 		ev := rpc.EventToProto(e)
-		stream.Send(ev)
+		return stream.Send(ev)
 	})
 	if err != nil {
 		return err

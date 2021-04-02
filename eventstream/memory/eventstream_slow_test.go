@@ -29,8 +29,9 @@ var _ = Describe("memory/event_stream", func() {
 		time.Sleep(5 * time.Millisecond)
 		ctx := context.Background()
 		var counter int
-		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) error {
 			counter++
+			return nil
 		})
 		Eventually(func() int64 { return w.Stream().LastSequence() }).Should(Equal(int64(totalCount)))
 		Eventually(func() int { return counter }).Should(Equal(totalCount))
@@ -43,9 +44,10 @@ var _ = Describe("memory/event_stream", func() {
 		w := es.NewWrapper(s)
 		ctx := context.Background()
 		var counter int
-		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) error {
 			counter++
 			time.Sleep(5 * time.Millisecond)
+			return nil
 		})
 		time.Sleep(2 * time.Millisecond)
 		go func() {
@@ -73,14 +75,16 @@ var _ = Describe("memory/event_stream", func() {
 		time.Sleep(2 * time.Millisecond)
 		ctx := context.Background()
 		var counter1 int
-		_, _ = w.Stream().Subscribe(ctx, "test1", es.Select(), func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test1", es.Select(), func(e *es.Event) error {
 			counter1++
 			time.Sleep(2 * time.Millisecond)
+			return nil
 		})
 		var counter2 int
-		_, _ = w.Stream().Subscribe(ctx, "test2", es.Select(), func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test2", es.Select(), func(e *es.Event) error {
 			counter2++
 			time.Sleep(5 * time.Millisecond)
+			return nil
 		})
 		Eventually(func() int64 { return w.Stream().LastSequence() }).Should(Equal(int64(totalCount)))
 		Eventually(func() int { return counter1 }).Should(Equal(totalCount))
@@ -101,9 +105,10 @@ var _ = Describe("memory/event_stream", func() {
 		time.Sleep(2 * time.Millisecond)
 		ctx := context.Background()
 		var counter int
-		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {
+		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) error {
 			counter++
 			time.Sleep(100 * time.Millisecond)
+			return nil
 		})
 		Eventually(func() int64 { return w.Stream().LastSequence() }).Should(Equal(int64(totalCount)))
 		Eventually(func() int { return counter }, 3*time.Second).Should(Equal(totalCount))

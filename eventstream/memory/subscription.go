@@ -76,16 +76,21 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 		defer s.wg.Done()
 		for {
 			if nextSequence <= lastKnownSequence {
-				err := s.stream.Stream(ctx, s.activeSelector, es.Range(nextSequence, lastKnownSequence), func(e *es.Event) {
+				err := s.stream.Stream(ctx, s.activeSelector, es.Range(nextSequence, lastKnownSequence), func(e *es.Event) error {
 					if s.activeSelector.Matches(e) {
-						handler(e)
+						if err := handler(e); err != nil {
+							s.lastError = err
+							s.stream.unsubscribe(s)
+							return err
+						}
 					}
 					if err := s.Acknowledge(e.Sequence); err != nil {
 						s.lastError = err
 						s.stream.unsubscribe(s)
-						return
+						return err
 					}
 					nextSequence = e.Sequence + 1
+					return nil
 				})
 				if err != nil {
 					s.lastError = err
@@ -106,7 +111,11 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 						}
 					} else {
 						if s.activeSelector.Matches(event) {
-							handler(event)
+							if err := handler(event); err != nil {
+								s.lastError = err
+								s.stream.unsubscribe(s)
+								return
+							}
 						}
 						if err := s.Acknowledge(event.Sequence); err != nil {
 							s.lastError = err

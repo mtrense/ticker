@@ -135,10 +135,8 @@ func executeClientStream(cmd *cobra.Command, args []string) {
 	formatter := createFormatter(cmd)
 	cl := client.NewClient(clientConnect())
 	ctx := support.CancelContextOnSignals(context.Background(), syscall.SIGINT)
-	err := cl.Stream(ctx, selectorFromFlags(cmd), bracketFromFlags(cmd), func(e *base.Event) {
-		if err := formatter(os.Stdout, e); err != nil {
-			panic(err)
-		}
+	err := cl.Stream(ctx, selectorFromFlags(cmd), bracketFromFlags(cmd), func(e *base.Event) error {
+		return formatter(os.Stdout, e)
 	})
 	if err != nil {
 		panic(err)

@@ -56,7 +56,9 @@ func (s *Client) Stream(ctx context.Context, selector *es.Selector, bracket *es.
 			return err
 		}
 		event := rpc.ProtoToEvent(ev)
-		handler(event)
+		if err := handler(event); err != nil {
+			return err
+		}
 	}
 	return nil
 }
