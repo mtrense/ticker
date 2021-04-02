@@ -61,9 +61,12 @@ func (s *eventStreamServer) Subscribe(req *rpc.SubscriptionRequest, stream rpc.E
 		Aggregate: req.Selector.Aggregate,
 		Type:      req.Selector.Type,
 	}
-	s.server.streamBackend.Subscribe(stream.Context(), persistentClientID, selector, func(e *es.Event) {
+	sub, err := s.server.streamBackend.Subscribe(stream.Context(), persistentClientID, selector, func(e *es.Event) {
 		ev := rpc.EventToProto(e)
 		stream.Send(ev)
 	})
-	return nil
+	if err != nil {
+		return err
+	}
+	return sub.Wait()
 }

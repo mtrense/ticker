@@ -36,6 +36,8 @@ type Subscription interface {
 	Active() bool
 	// Returns the time this Subscription last became inactive.
 	InactiveSince() time.Time
+	// Wait for the Subscription to become inactive (disconnected)
+	Wait() error
 	// Returns how often this Subscription has dropped out of the live stream.
 	DropOuts() int
 	// Closes this Subscription and removes all associated state. A Subscription can not be resumed after this call.

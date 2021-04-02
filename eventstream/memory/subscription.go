@@ -4,6 +4,7 @@ package memory
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	es "github.com/mtrense/ticker/eventstream/base"
@@ -20,6 +21,7 @@ type Subscription struct {
 	handler        es.EventHandler
 	dropOuts       int
 	lastError      error
+	wg             sync.WaitGroup
 }
 
 func newSubscription(stream *EventStream, clientID string, sel es.Selector) *Subscription {
@@ -60,6 +62,7 @@ func (s *Subscription) publishEvent(event *es.Event) {
 }
 
 func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventHandler) error {
+	s.wg.Add(1)
 	lastSequence, err := s.LastAcknowledgedSequence()
 	if err != nil {
 		return err
@@ -70,6 +73,7 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 		return err
 	}
 	go func() {
+		defer s.wg.Done()
 		for {
 			if nextSequence <= lastKnownSequence {
 				err := s.stream.Stream(ctx, s.activeSelector, es.Range(nextSequence, lastKnownSequence), func(e *es.Event) {
@@ -127,6 +131,11 @@ func (s *Subscription) Active() bool {
 
 func (s *Subscription) InactiveSince() time.Time {
 	return s.inactiveSince
+}
+
+func (s *Subscription) Wait() error {
+	s.wg.Wait()
+	return s.lastError
 }
 
 func (s *Subscription) DropOuts() int {
