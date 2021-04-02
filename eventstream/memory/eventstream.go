@@ -80,15 +80,20 @@ func (s *EventStream) Stream(ctx context.Context, sel es.Selector, bracket es.Br
 }
 
 func (s *EventStream) Subscribe(ctx context.Context, persistentClientID string, sel es.Selector, handler es.EventHandler) (es.Subscription, error) {
+	sub := s.getOrCreateSubscription(persistentClientID, sel)
+	err := sub.handleSubscription(ctx, handler)
+	return sub, err
+}
+
+func (s *EventStream) getOrCreateSubscription(persistentClientID string, sel es.Selector) *Subscription {
 	s.writeLock.Lock()
+	defer s.writeLock.Unlock()
 	sub, present := s.subscriptions[persistentClientID]
 	if !present {
 		sub = newSubscription(s, persistentClientID, sel)
 		s.subscriptions[persistentClientID] = sub
 	}
-	s.writeLock.Unlock()
-	err := sub.handleSubscription(ctx, handler)
-	return sub, err
+	return sub
 }
 
 func (s *EventStream) attachSubscription(sub *Subscription) (int64, error) {
