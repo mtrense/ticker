@@ -41,19 +41,20 @@ var _ = Describe("memory/event_stream", func() {
 		s := NewMemoryEventStream(NewMemorySequenceStore())
 		s.defaultBufferSize = 10
 		w := es.NewWrapper(s)
-		go func() {
-			for i := 0; i < totalCount; i++ {
-				agg := i % 8
-				w.Emit(w.Agg("test", strconv.Itoa(agg)))
-			}
-		}()
-		time.Sleep(2 * time.Millisecond)
 		ctx := context.Background()
 		var counter int
 		_, _ = w.Stream().Subscribe(ctx, "test", es.Select(), func(e *es.Event) {
 			counter++
-			time.Sleep(2 * time.Millisecond)
+			time.Sleep(5 * time.Millisecond)
 		})
+		time.Sleep(2 * time.Millisecond)
+		go func() {
+			for i := 0; i < totalCount; i++ {
+				agg := i % 8
+				w.Emit(w.Agg("test", strconv.Itoa(agg)))
+				time.Sleep(2 * time.Millisecond)
+			}
+		}()
 		Eventually(func() int64 { return w.Stream().LastSequence() }).Should(Equal(int64(totalCount)))
 		Eventually(func() int { return counter }).Should(Equal(totalCount))
 	})
