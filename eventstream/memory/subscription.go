@@ -76,7 +76,11 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 					if s.activeSelector.Matches(e) {
 						handler(e)
 					}
-					s.Acknowledge(e.Sequence)
+					if err := s.Acknowledge(e.Sequence); err != nil {
+						s.lastError = err
+						s.stream.unsubscribe(s)
+						return
+					}
 					nextSequence = e.Sequence + 1
 				})
 				if err != nil {
@@ -100,7 +104,11 @@ func (s *Subscription) handleSubscription(ctx context.Context, handler es.EventH
 						if s.activeSelector.Matches(event) {
 							handler(event)
 						}
-						s.Acknowledge(event.Sequence)
+						if err := s.Acknowledge(event.Sequence); err != nil {
+							s.lastError = err
+							s.stream.unsubscribe(s)
+							return
+						}
 						nextSequence = event.Sequence + 1
 					}
 				case <-ctx.Done():
